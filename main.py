@@ -46,7 +46,6 @@ def predict(video_file_name, query):
             "steps": []
         }
     }
-    # Convert dictionary to JSON string
     return result
 
 def capture_frames_at_times(video_path, time_entries):
@@ -174,3 +173,22 @@ if st.session_state.submitted:
             st.error("Lỗi giá trị không hợp lệ")
     else:
         st.write("Không có dữ liệu trả về.")
+
+from fastapi import FastAPI, Query
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class PredictRequest(BaseModel):
+    video_file_name: str
+    query: str
+
+@app.post("/predict")
+async def get_prediction(request: PredictRequest):
+    result = predict(request.video_file_name, request.query)
+    print(type(result))
+    return result
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
