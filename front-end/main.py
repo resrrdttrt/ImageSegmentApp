@@ -1,51 +1,70 @@
 import streamlit as st
 import os
-import json
 import cv2
 from PIL import Image
-import json
+import time
+from datetime import datetime
 
-def predict(video_file_name, query):
+def predict(video_file_name, query, log_placeholder):
+    # Initialize an empty list to keep log entries
+    logs = []
+
+    # Function to update the log placeholder with accumulated logs
+    def update_logs(message, message_type='info'):
+        timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        if message_type == 'info':
+            formatted_message = f"<p style='color: blue;'>[{timestamp}] <b>INFO:</b> {message}</p>"
+        elif message_type == 'success':
+            formatted_message = f"<p style='color: green;'>[{timestamp}] <b>SUCCESS:</b> {message}</p>"
+        elif message_type == 'warning':
+            formatted_message = f"<p style='color: orange;'>[{timestamp}] <b>WARNING:</b> {message}</p>"
+        elif message_type == 'error':
+            formatted_message = f"<p style='color: red;'>[{timestamp}] <b>ERROR:</b> {message}</p>"
+        else:
+            formatted_message = f"<p>[{timestamp}] <b>{message_type.upper()}:</b> {message}</p>"
+        
+        logs.append(formatted_message)
+        # Apply border style to the log placeholder
+        log_placeholder.markdown(
+            f"""
+            <div style="border: 2px solid #ddd; border-radius: 5px; padding: 10px; background-color: #f9f9f9;">
+                <div>{'<br>'.join(logs)}</div>
+            </div>
+            """, unsafe_allow_html=True
+        )
+    
+    # Simulate loading an AI model
+    update_logs("Loading AI model...")
+    time.sleep(3)  # Simulating model loading time
+    update_logs("AI model loaded.")
+
+    # Simulate model prediction process
+    update_logs(f"Running prediction on video: {video_file_name} with query: '{query}'")
+    time.sleep(3)  # Simulating prediction time
+    update_logs("Step 1 running.")
+    time.sleep(2)
+    update_logs("Step 2 running.")
+    time.sleep(2)
+    update_logs("Step 3 running.")
+    time.sleep(2)
+    update_logs("Prediction completed.", message_type='success')
+
     result = {
-    'How to use gun shooting': {
-        '4Gx9W0XFAkA.mp4': {
-            'relevant': True,
-            'clip': True,
-            'v_duration': 299.73,
-            'bounds': [5, 10],  # Updated bounds
-            'steps': [
-                {
-                    'index': 0,
-                    'heading': 'mix it',
-                    'absolute_bounds': [5, 7]  # Adjusted bounds
-                },
-                {
-                    'index': 1,
-                    'heading': 'bake it in oven',
-                    'absolute_bounds': [7, 8]  # Adjusted bounds
-                },
-                {
-                    'index': 2,
-                    'heading': 'mix it',
-                    'absolute_bounds': [8, 10]  # Adjusted bounds
-                }
-            ]
+        'How to use gun shooting': {
+            '4Gx9W0XFAkA.mp4': {
+                'relevant': True,
+                'clip': True,
+                'v_duration': 299.73,
+                'bounds': [5, 10],
+                'steps': [
+                    {'index': 0, 'heading': 'mix it', 'absolute_bounds': [5, 7]},
+                    {'index': 1, 'heading': 'bake it in oven', 'absolute_bounds': [7, 8]},
+                    {'index': 2, 'heading': 'mix it', 'absolute_bounds': [8, 10]}
+                ]
+            }
         }
     }
-}
 
-    result1 = {
-        "vid3.mp4": {
-            "relevant": True,
-            "clip": True,
-            "v_duration": 10.00,  # Adjusted duration to fit within the range
-            "bounds": [
-                1,
-                10
-            ],
-            "steps": []
-        }
-    }
     return result
 
 def capture_frames_at_times(video_path, time_entries):
@@ -58,7 +77,7 @@ def capture_frames_at_times(video_path, time_entries):
 
     for entry in time_entries:
         lower_bound, upper_bound = entry['absolute_bounds']
-        cap.set(cv2.CAP_PROP_POS_MSEC, lower_bound * 1000)  # Set time in milliseconds
+        cap.set(cv2.CAP_PROP_POS_MSEC, lower_bound * 1000)
         ret, frame = cap.read()
         if ret:
             frames.append((frame, entry['heading'], lower_bound, upper_bound))
@@ -67,7 +86,6 @@ def capture_frames_at_times(video_path, time_entries):
     
     cap.release()
     return frames
-
 
 # Define the path to the video folder
 MEDIA_FOLDER = 'media'
@@ -105,7 +123,7 @@ with video_panel:
     end_index = min(start_index + videos_per_page, total_videos)
 
     # Create columns for the current page videos
-    cols = st.columns(videos_per_page)  # Extra columns for buttons
+    cols = st.columns(videos_per_page)
 
     # Display the videos and buttons for the current page
     for index, (col, video_file) in enumerate(zip(cols, video_files[start_index:end_index])):
@@ -123,7 +141,7 @@ st.write("### Nhập câu truy vấn")
 
 # Create a form for the input box and submit button
 with st.form(key='input_form'):
-    col1, col2 ,col3= st.columns([10, 1,1])  # Adjust column widths as needed
+    col1, col2 ,col3= st.columns([10, 1, 1])
 
     # Input box
     with col1:
@@ -136,8 +154,7 @@ with st.form(key='input_form'):
         micro_button = st.form_submit_button("🎙")
 
     if micro_button:
-        print("micro button clicked")
-        # st.write("Micro button clicked")
+        st.write("Micro button clicked")
 
     # Handle form submission
     if submit_button:
@@ -148,15 +165,21 @@ with st.form(key='input_form'):
                 st.warning("Hãy chọn một video để phân tích")
             else:
                 st.session_state.submitted = True
-                
+
 if st.session_state.submitted:
     st.write("### Kết quả")
+    log_placeholder = st.empty()
     video_file_path = os.path.join(MEDIA_FOLDER, st.session_state.selected_video)
-    result_json = predict(st.session_state.selected_video, user_input)
+    
+    # Run prediction and update logs in real-time
+    result_json = predict(st.session_state.selected_video, user_input, log_placeholder)
+    
     st.write("Kết quả dự đoán:")
     st.code(result_json)
+    
     video_bound = next(iter(next(iter(result_json.values())).values()))['bounds']
     times_input = next(iter(next(iter(result_json.values())).values()))['steps']
+    
     if times_input and video_bound:
         try:
             frames = capture_frames_at_times(video_file_path, times_input)
@@ -173,4 +196,3 @@ if st.session_state.submitted:
             st.error("Lỗi giá trị không hợp lệ")
     else:
         st.write("Không có dữ liệu trả về.")
-
