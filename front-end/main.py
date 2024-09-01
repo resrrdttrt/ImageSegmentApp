@@ -4,6 +4,7 @@ import cv2
 from PIL import Image
 import time
 from datetime import datetime
+import json
 
 def predict(video_file_name, query, log_placeholder):
     # Initialize an empty list to keep log entries
@@ -23,11 +24,14 @@ def predict(video_file_name, query, log_placeholder):
         else:
             formatted_message = f"<p>[{timestamp}] <b>{message_type.upper()}:</b> {message}</p>"
         
+        # Append the new log message
         logs.append(formatted_message)
-        # Apply border style to the log placeholder
+        
+        
+        # Apply border style and black background to the log placeholder
         log_placeholder.markdown(
             f"""
-            <div style="border: 2px solid #ddd; border-radius: 5px; padding: 10px; background-color: #f9f9f9;">
+            <div style="border: 2px solid #ddd; border-radius: 5px; padding: 10px; background-color: gray; height: 300px; overflow-y: auto;">
                 <div>{'<br>'.join(logs)}</div>
             </div>
             """, unsafe_allow_html=True
@@ -48,7 +52,6 @@ def predict(video_file_name, query, log_placeholder):
     update_logs("Step 3 running.")
     time.sleep(2)
     update_logs("Prediction completed.", message_type='success')
-
     result = {
         'How to use gun shooting': {
             '4Gx9W0XFAkA.mp4': {
@@ -124,14 +127,17 @@ with video_panel:
 
     # Create columns for the current page videos
     cols = st.columns(videos_per_page)
+    cols2 = st.columns(videos_per_page)
 
     # Display the videos and buttons for the current page
     for index, (col, video_file) in enumerate(zip(cols, video_files[start_index:end_index])):
         with col:
             st.video(os.path.join(MEDIA_FOLDER, video_file))
+
+    for index, (col2, video_file) in enumerate(zip(cols2, video_files[start_index:end_index])):
+        with col2:
             if st.button(f"Select Video {index + start_index + 1}", key=f"select_{index}"):
                 st.session_state.selected_video = video_file
-
 # Display the selected video message if one is selected
 if st.session_state.selected_video:
     st.write(f"Đã chọn Video: {st.session_state.selected_video}")
