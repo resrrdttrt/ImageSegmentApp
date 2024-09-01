@@ -76,7 +76,7 @@ MEDIA_FOLDER = 'media'
 video_files = [f for f in os.listdir(MEDIA_FOLDER) if f.endswith(('.mp4', '.mov', '.avi', '.mkv'))]
 
 # Set the number of videos to display at a time
-videos_per_page = 4
+videos_per_page = min(4, len(video_files))
 
 # Set the layout of the Streamlit app
 st.set_page_config(layout="wide")
@@ -174,21 +174,3 @@ if st.session_state.submitted:
     else:
         st.write("Không có dữ liệu trả về.")
 
-from fastapi import FastAPI, Query
-from pydantic import BaseModel
-
-app = FastAPI()
-
-class PredictRequest(BaseModel):
-    video_file_name: str
-    query: str
-
-@app.post("/predict")
-async def get_prediction(request: PredictRequest):
-    result = predict(request.video_file_name, request.query)
-    print(type(result))
-    return result
-
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
